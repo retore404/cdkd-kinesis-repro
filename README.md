@@ -1,18 +1,34 @@
-# cdkd: `@aws-sdk/client-kinesis` lower bound is too low
+# cdkd crashes on startup with `@aws-sdk/client-kinesis` 3.1018.0–3.1138.x
 
-`@go-to-k/cdkd@0.312.0` fails at startup when `@aws-sdk/client-kinesis` resolves to a version below 3.1139.0, even though that version satisfies the declared range `^3.1018.0`.
+## Summary
 
-## Cause
+cdkd needs `@aws-sdk/client-kinesis` **3.1139.0 or later**, but its `package.json` only asks for **3.1018.0 or later** (`^3.1018.0`).
 
-- cdkd imports `UpdateStreamRecordDistributionStrategyCommand` from `@aws-sdk/client-kinesis` (`src/provisioning/providers/kinesis/update.ts`).
-- That command was added in `@aws-sdk/client-kinesis` **3.1139.0** ([CHANGELOG](https://github.com/aws/aws-sdk-js-v3/blob/main/clients/client-kinesis/CHANGELOG.md)).
-- cdkd declares `"@aws-sdk/client-kinesis": "^3.1018.0"`, so a package manager may legitimately reuse an older version that already exists in the dependency tree. In real projects this happens when another dependency (for example `@aws-amplify/analytics`, which declares `^3.1012.0`) has already resolved an older client.
+If a project ends up with a version between 3.1018.0 and 3.1138.x, every cdkd command crashes on startup.
 
-This project pins `@aws-sdk/client-kinesis@3.1106.0` as a direct dependency to simulate that situation.
+| `@aws-sdk/client-kinesis` version | Allowed by cdkd's `package.json`? | Does cdkd work? |
+| --- | --- | --- |
+| 3.1017.x or older | No | — |
+| **3.1018.0 – 3.1138.x** | **Yes** | **No, it crashes** |
+| 3.1139.0 or later | Yes | Yes |
 
-## Reproduce
+## Why it happens
 
-No AWS account is needed. The error happens while modules load, before any AWS call.
+- cdkd imports `UpdateStreamRecordDistributionStrategyCommand` from `@aws-sdk/client-kinesis` in [`src/provisioning/providers/kinesis/update.ts`](https://github.com/go-to-k/cdkd/blob/main/src/provisioning/providers/kinesis/update.ts).
+- That command first appeared in `@aws-sdk/client-kinesis` 3.1139.0 ([CHANGELOG](https://github.com/aws/aws-sdk-js-v3/blob/main/clients/client-kinesis/CHANGELOG.md)).
+- With an older version, the import fails as soon as cdkd loads.
+
+## When it happens in real projects
+
+When cdkd is installed on its own, the package manager picks the newest `@aws-sdk/client-kinesis` (3.1139.0 or later), so you won't see the problem.
+
+It only shows up when another dependency has already installed an older version. For example, `@aws-amplify/analytics` can pull in 3.1106.0. Because 3.1106.0 is within cdkd's declared range, the package manager reuses it for cdkd. It is allowed to do this, and cdkd crashes as a result.
+
+This repository adds `@aws-sdk/client-kinesis@3.1106.0` as a direct dependency to create that situation.
+
+## How to reproduce
+
+You don't need an AWS account. The crash happens before cdkd calls AWS.
 
 ```sh
 pnpm install --ignore-workspace
@@ -20,39 +36,30 @@ AWS_REGION=us-east-1 AWS_ACCESS_KEY_ID=dummy AWS_SECRET_ACCESS_KEY=dummy \
   ./node_modules/.bin/cdkd diff --all
 ```
 
-`pnpm why @aws-sdk/client-kinesis` shows that cdkd uses the hoisted 3.1106.0:
-
-```
-@aws-sdk/client-kinesis@3.1106.0
-├─┬ @go-to-k/cdkd@0.312.0
-│ └── cdkd-kinesis-repro (dependencies)
-├─┬ cdk-local@0.158.0
-│ └── @go-to-k/cdkd@0.312.0 [deduped]
-└── cdkd-kinesis-repro (dependencies)
-```
-
-### Actual
+### What happens
 
 ```
 SyntaxError: Named export 'UpdateStreamRecordDistributionStrategyCommand' not found. The requested module '@aws-sdk/client-kinesis' is a CommonJS module, which may not support all module.exports as named exports.
 ```
 
-### Expected
+### What should happen
 
-cdkd loads and reaches the AWS call. With dummy credentials that means:
+cdkd starts and reaches the AWS call. The dummy credentials are rejected, which is expected:
 
 ```
 InvalidClientTokenId: The security token included in the request is invalid.
 ```
 
-You get this result after changing `@aws-sdk/client-kinesis` in `package.json` to `3.1139.0` and reinstalling.
-
-## Versions
-
-- `@go-to-k/cdkd` 0.312.0. `@go-to-k/cdkd` is deprecated ("moved to @cdkd/cli"). `@cdkd/cli@0.333.0` still declares `^3.1018.0`, and `main` still imports the command.
-- `@aws-sdk/client-kinesis` 3.1106.0 (fails) and 3.1139.0 (works)
-- Node.js 24.22.1, pnpm 12.16.1
+To see this, change `@aws-sdk/client-kinesis` in `package.json` to `3.1139.0` and run the steps again.
 
 ## Suggested fix
 
-Raise the declared range to `^3.1139.0` and check the lower bounds of the other `@aws-sdk/client-*` dependencies against the APIs they import.
+Change the dependency in cdkd's `package.json` to `"@aws-sdk/client-kinesis": "^3.1139.0"`.
+
+The other `@aws-sdk/client-*` dependencies may have the same problem, so their minimum versions should be checked too.
+
+## Versions tested
+
+- `@go-to-k/cdkd` 0.312.0. This package is deprecated and has moved to `@cdkd/cli`. The latest `@cdkd/cli` (0.333.0) still declares `^3.1018.0`, and its source still imports the command.
+- `@aws-sdk/client-kinesis` 3.1106.0 (crashes) and 3.1139.0 (works)
+- Node.js 24.22.1, pnpm 12.16.1
