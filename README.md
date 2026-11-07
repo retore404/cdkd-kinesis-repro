@@ -54,6 +54,9 @@ To see this, change `@aws-sdk/client-kinesis` in `package.json` to `3.1139.0` an
 
 ## Versions tested
 
-- `@go-to-k/cdkd` 0.312.0. This package is deprecated and has moved to `@cdkd/cli`. The latest `@cdkd/cli` (0.333.0) still declares `^3.1018.0`, and its source still imports the command.
+- `@go-to-k/cdkd` 0.312.0
+  - This package is deprecated and has moved to `@cdkd/cli`.
+  - It is used here because every `@cdkd/cli` release is less than 7 days old (first published on 2026-11-03), and the test environment blocks packages that new with pnpm's `minimumReleaseAge` setting.
+  - The latest `@cdkd/cli` (0.333.0) still declares `^3.1018.0`, and its source still imports the command, so it is expected to have the same problem. This has not been run yet.
 - `@aws-sdk/client-kinesis` 3.1106.0 (crashes) and 3.1139.0 (works)
 - Node.js 24.22.1, pnpm 12.16.1
