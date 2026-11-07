@@ -52,12 +52,6 @@ InvalidClientTokenId: The security token included in the request is invalid.
 
 To see this, change `@aws-sdk/client-kinesis` in `package.json` to `3.1139.0` and run the steps again.
 
-## Suggested fix
-
-Change the dependency in cdkd's `package.json` to `"@aws-sdk/client-kinesis": "^3.1139.0"`.
-
-The other `@aws-sdk/client-*` dependencies may have the same problem, so their minimum versions should be checked too.
-
 ## Versions tested
 
 - `@go-to-k/cdkd` 0.312.0. This package is deprecated and has moved to `@cdkd/cli`. The latest `@cdkd/cli` (0.333.0) still declares `^3.1018.0`, and its source still imports the command.
