@@ -31,8 +31,6 @@ This repository adds `@aws-sdk/client-kinesis@3.1106.0` as a direct dependency t
 You don't need an AWS account. The crash happens before cdkd calls AWS.
 
 ```sh
-git clone https://github.com/retore404/cdkd-kinesis-repro.git
-cd cdkd-kinesis-repro
 pnpm install --ignore-workspace
 AWS_REGION=us-east-1 AWS_ACCESS_KEY_ID=dummy AWS_SECRET_ACCESS_KEY=dummy \
   pnpm exec cdkd diff --all
