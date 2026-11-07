@@ -33,7 +33,7 @@ You don't need an AWS account. The crash happens before cdkd calls AWS.
 ```sh
 pnpm install --ignore-workspace
 AWS_REGION=us-east-1 AWS_ACCESS_KEY_ID=dummy AWS_SECRET_ACCESS_KEY=dummy \
-  ./node_modules/.bin/cdkd diff --all
+  pnpm exec cdkd diff --all
 ```
 
 ### What happens
