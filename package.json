@@ -1,0 +1,11 @@
+{
+  "name": "cdkd-kinesis-repro",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-kinesis": "3.1106.0",
+    "@go-to-k/cdkd": "0.312.0",
+    "aws-cdk-lib": "2.275.0",
+    "constructs": "10.8.1"
+  }
+}
